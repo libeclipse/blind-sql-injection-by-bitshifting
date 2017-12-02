@@ -1,9 +1,11 @@
 # Blind SQL Injection via Bitshifting
 
-This is a module that performs blind SQL injection by using the bitshifting method to **calculate** characters instead of guessing them. It requires 7/8 requests per character, depending on the configuration.
+This is a module that performs blind SQL injection by using the bitshifting method to **calculate** chars instead of guessing them. It requires exactly 8 requests per character. Further efficency is possible in some cases with a few modifications.
+
+Based on a [paper](https://www.exploit-db.com/papers/17073/) written by **Jelmer de 
+Hen**.
 
 ## Usage
-
 ```
 import blind-sql-bitshifting as x
 
@@ -11,7 +13,7 @@ import blind-sql-bitshifting as x
 x.options
 ```
 
-### Example configuration:
+### Example configuration: 
 
 ```
 # Vulnerable link
@@ -20,8 +22,8 @@ x.options["target"] = "http://www.example.com/index.php?id=1"
 # Specify cookie (optional)
 x.options["cookies"] = ""
 
-# Specify a condition for a specific row, e.g. 'uid=1' for admin (optional)
-x.options["row_condition"] = ""
+# Specify a condition for a specific row, e.g. 'uid=1' for admin (1 = no condition)
+x.options["row_condition"] = "1"
 
 # Boolean option for following redirections
 x.options["follow_redirections"] = 0
@@ -30,54 +32,21 @@ x.options["follow_redirections"] = 0
 x.options["user_agent"] = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 
 # Specify table to dump
-x.options["table_name"] = "users"
+x.options["table_name"] = "table"
 
 # Specify columns to dump
-x.options["columns"] = "id, username"
+x.options["columns"] = "col1,col2"
 
 # String to check for on page after successful statement
-x.options["truth_string"] = "<p id='success'>true</p>"
-
-# See below
-x.options["assume_only_ascii"] = 1
+x.options["truth_string"] = "<p id='header'>true</p>"
 ```
 
-The `assume_only_ascii` option makes the module assume that the characters it's dumping are all ASCII. Since the ASCII charset only goes up to `127`, we can set the first bit to `0` and not worry about calculating it. That's a `12.5%` reduction in requests. Testing locally, this yeilded an average speed increase of `15%`. Of course this can cause issues when dumping chars that are outside of the ASCII range. By default, it's set to `0`.
+Then:
 
-Once configured:
+`x.exploit()`
 
-```
-data = x.exploit()
-```
-
-This returns a 2-dimensional array, with each sub-array containing a single row, the first being the column headers.
+This returns a 2-dimentional array, with each sub-array containing a single row, the first being the column headers.
 
 Example output:
 
-`[['id', 'username'], ['1', 'eclipse'], ['2', 'dotcppfile'], ['3', 'Acey'], ['4', 'Wardy'], ['5', 'idek']]`
-
-Optionally, your scripts can then harness the [tabulate](https://pypi.python.org/pypi/tabulate) module to output the data:
-
-```
-from tabulate import tabulate
-
-data = x.exploit()
-
-print tabulate(data,
-               headers='firstrow',  # This specifies to use the first row as the column headers.
-               tablefmt='psql')     # Using the SQL output format. Other formats can be used.
-```
-
-This would output:
-
-```
-+------+------------+
-|   id | username   |
-|------+------------|
-|    1 | eclipse    |
-|    2 | dotcppfile |
-|    3 | Acey       |
-|    4 | Wardy      |
-|    5 | idek       |
-+------+------------+
-```
+`[['id', 'username'], ['1', 'lol'], ['2', 'lel']]`
